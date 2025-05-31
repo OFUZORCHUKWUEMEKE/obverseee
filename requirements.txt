@@ -1,0 +1,8 @@
+pymango
+pydantic
+motor
+anyio
+annotated-types
+typing-extensions
+python-telegram-bot
+pydantic[email]
