@@ -4,6 +4,8 @@ from typing import Optional
 from pydantic import BaseModel, Field
 from beanie import Document
 from bson import ObjectId
+from pymongo import IndexModel
+
 
 class Chain(str, Enum):
     SOLANA = "solana"
@@ -55,7 +57,7 @@ class Transaction(Document):
 
     class Config:
         json_encoders = {ObjectId: str}
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "user_id": "user123",
                 "tx_hash": "5VERv8NMvzbJMEkV8xnrLkEaWRtSz9CosKDYjCJjBRnb",
