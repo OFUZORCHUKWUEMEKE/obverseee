@@ -1,153 +1,100 @@
 from datetime import datetime
-from typing import List, Optional
 from enum import Enum
+from typing import Optional
 from pydantic import BaseModel, Field
+from beanie import Document
 from bson import ObjectId
-from pymongo import IndexModel
 
-from pydantic.functional_validators import BeforeValidator
-from typing_extensions import Annotated
-
-PyObjectId = Annotated[str, BeforeValidator(str)]
-
-
-class ChainEnum(str, Enum):
-    """Blockchain network enumeration"""
+class Chain(str, Enum):
     SOLANA = "solana"
     ETHEREUM = "ethereum"
 
-
-class TransactionTypeEnum(str, Enum):
-    """Transaction type enumeration"""
+class TransactionType(str, Enum):
     BUY = "buy"
     SELL = "sell"
     SEND = "send"
     RECEIVE = "receive"
 
-
-class TransactionStatusEnum(str, Enum):
-    """Transaction status enumeration"""
+class TransactionStatus(str, Enum):
     PENDING = "pending"
     CONFIRMED = "confirmed"
     FAILED = "failed"
 
-class Transaction(BaseModel):
-    """Transaction model for MongoDB with FastAPI"""
-    id: Optional[PyObjectId] = Field(alias="_id", default=None)
-    userId: str = Field(..., description="User identifier")
-    txHash: Optional[str] = Field(None, description="Transaction hash")
-    chain: ChainEnum = Field(..., description="Blockchain network")
-    txType: TransactionTypeEnum = Field(..., description="Transaction type")
+class Transaction(Document):
+    user_id: str
+    tx_hash: Optional[str] = None
+    chain: Chain
+    tx_type: TransactionType
     
     # Transaction details
-    fromAddress: Optional[str] = Field(None, description="Sender address")
-    toAddress: Optional[str] = Field(None, description="Recipient address")
-    tokenAddress: Optional[str] = Field(None, description="Token contract address")
-    tokenSymbol: Optional[str] = Field(None, description="Token symbol")
-    amount: Optional[str] = Field(None, description="Transaction amount as string for precision")
-    usdValue: Optional[float] = Field(None, description="USD value of transaction")
+    from_address: Optional[str] = None
+    to_address: Optional[str] = None
+    token_address: Optional[str] = None
+    token_symbol: Optional[str] = None
+    amount: Optional[str] = None  # String to handle large numbers
+    usd_value: Optional[float] = None
     
     # Status tracking
-    status: TransactionStatusEnum = Field(default=TransactionStatusEnum.PENDING, description="Transaction status")
-    confirmations: int = Field(default=0, description="Number of confirmations")
-    gasFee: Optional[str] = Field(None, description="Gas fee as string for precision")
-    confirmedAt: Optional[datetime] = Field(None, description="Confirmation timestamp")
-    
-    # Timestamps
-    createdAt: datetime = Field(default_factory=datetime.utcnow, description="Creation timestamp")
-    updatedAt: datetime = Field(default_factory=datetime.utcnow, description="Last update timestamp")
-
-    class Config:
-        allow_population_by_field_name = True
-        arbitrary_types_allowed = True
-        schema_extra = {
-            "example": {
-                "userId": "123456789",
-                "txHash": "5wHhz3KWqnLpCQK7Q8CvG7q8WJVwCJQKCQk7wHhz3KWqnLpCQK7Q8",
-                "chain": "solana",
-                "txType": "send",
-                "fromAddress": "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU",
-                "toAddress": "8yBJBWKJ9XnBJrj8v7GsdBfYNPQk7BZ9vhG3tGJZsT9Q",
-                "tokenAddress": "So11111111111111111111111111111111111111112",
-                "tokenSymbol": "SOL",
-                "amount": "1.5",
-                "usdValue": 150.75,
-                "status": "confirmed",
-                "confirmations": 32,
-                "gasFee": "0.000005",
-                "confirmedAt": "2024-01-01T12:00:00Z"
-            }
-        }
-
-class TransactionResponse(BaseModel):
-    """Transaction response model for API responses"""
-    id: str = Field(..., description="Transaction document ID")
-    userId: str
-    txHash: Optional[str] = None
-    chain: ChainEnum
-    txType: TransactionTypeEnum
-    fromAddress: Optional[str] = None
-    toAddress: Optional[str] = None
-    tokenAddress: Optional[str] = None
-    tokenSymbol: Optional[str] = None
-    amount: Optional[str] = None
-    usdValue: Optional[float] = None
-    status: TransactionStatusEnum
-    confirmations: int
-    gasFee: Optional[str] = None
-    confirmedAt: Optional[datetime] = None
-    createdAt: datetime
-    updatedAt: datetime
-
-    class Config:
-        schema_extra = {
-            "example": {
-                "id": "507f1f77bcf86cd799439011",
-                "userId": "123456789",
-                "txHash": "5wHhz3KWqnLpCQK7Q8CvG7q8WJVwCJQKCQk7wHhz3KWqnLpCQK7Q8",
-                "chain": "solana",
-                "txType": "send",
-                "fromAddress": "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU",
-                "toAddress": "8yBJBWKJ9XnBJrj8v7GsdBfYNPQk7BZ9vhG3tGJZsT9Q",
-                "tokenAddress": "So11111111111111111111111111111111111111112",
-                "tokenSymbol": "SOL",
-                "amount": "1.5",
-                "usdValue": 150.75,
-                "status": "confirmed",
-                "confirmations": 32,
-                "gasFee": "0.000005",
-                "confirmedAt": "2024-01-01T12:00:00Z",
-                "createdAt": "2024-01-01T10:00:00Z",
-                "updatedAt": "2024-01-01T12:00:00Z"
-            }
-        }
-
-class TransactionCreate(BaseModel):
-    """Model for creating new transactions"""
-    userId: str = Field(..., description="User identifier")
-    txHash: Optional[str] = None
-    chain: ChainEnum = Field(..., description="Blockchain network")
-    txType: TransactionTypeEnum = Field(..., description="Transaction type")
-    fromAddress: Optional[str] = None
-    toAddress: Optional[str] = None
-    tokenAddress: Optional[str] = None
-    tokenSymbol: Optional[str] = None
-    amount: Optional[str] = None
-    usdValue: Optional[float] = None
-    status: TransactionStatusEnum = TransactionStatusEnum.PENDING
+    status: TransactionStatus = TransactionStatus.PENDING
     confirmations: int = 0
-    gasFee: Optional[str] = None
+    gas_fee: Optional[str] = None
+    confirmed_at: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+    class Settings:
+        name = "transactions"
+        indexes = [
+            "user_id",
+            "tx_hash",
+            "chain",
+            "tx_type",
+            "status",
+            "created_at",
+        ]
 
     class Config:
+        json_encoders = {ObjectId: str}
         schema_extra = {
             "example": {
-                "userId": "123456789",
-                "chain": "solana",
-                "txType": "send",
-                "fromAddress": "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU",
-                "toAddress": "8yBJBWKJ9XnBJrj8v7GsdBfYNPQk7BZ9vhG3tGJZsT9Q",
-                "tokenSymbol": "SOL",
-                "amount": "1.5",
-                "usdValue": 150.75
+                "user_id": "user123",
+                "tx_hash": "5VERv8NMvzbJMEkV8xnrLkEaWRtSz9CosKDYjCJjBRnb",
+                "chain": Chain.SOLANA,
+                "tx_type": TransactionType.SEND,
+                "from_address": "HN5Hn1uVAf1sQ4Z1z8Gj3P5W5JrQeC5wXaJ4rYqk2FdT",
+                "to_address": "2Qqh3G6tYr6T4ZQ1Xg7J7Kz8Xq1ZJ8Xq1ZJ8Xq1ZJ8Xq1Z",
+                "token_address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+                "token_symbol": "USDC",
+                "amount": "10.5",
+                "usd_value": 10.5,
+                "status": TransactionStatus.PENDING,
+                "confirmations": 0,
+                "gas_fee": "0.0001",
+                "created_at": datetime.utcnow(),
+                "updated_at": datetime.utcnow()
             }
         }
+
+# Pydantic models for API
+class TransactionCreate(BaseModel):
+    user_id: str
+    chain: Chain
+    tx_type: TransactionType
+    from_address: Optional[str] = None
+    to_address: Optional[str] = None
+    token_address: Optional[str] = None
+    token_symbol: Optional[str] = None
+    amount: Optional[str] = None
+    usd_value: Optional[float] = None
+    gas_fee: Optional[str] = None
+
+class TransactionUpdate(BaseModel):
+    status: Optional[TransactionStatus] = None
+    tx_hash: Optional[str] = None
+    confirmations: Optional[int] = None
+    confirmed_at: Optional[datetime] = None
+    usd_value: Optional[float] = None
+
+class TransactionResponse(Transaction):
+    class Config:
+        fields = {'updated_at': {'exclude': True}}  # Optionally exclude fields from response

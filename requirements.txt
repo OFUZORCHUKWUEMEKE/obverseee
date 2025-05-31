@@ -6,3 +6,4 @@ annotated-types
 typing-extensions
 python-telegram-bot
 pydantic[email]
+beanie
