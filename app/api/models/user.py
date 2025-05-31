@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 from pymongo import IndexModel
 from beanie import Document, Link
 from bson import ObjectId
-from app.api.models.wallet import Wallet
+from .wallet import Wallet
 
 class Chain(str, Enum):
     SOLANA = "solana"

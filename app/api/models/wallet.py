@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 from beanie import Document, Indexed
 from bson import ObjectId
 from pymongo import IndexModel
+from beanie.odm.fields import PydanticObjectId
 
 class Chain(str, Enum):
     SOLANA = "solana"
@@ -21,7 +22,7 @@ class Token(BaseModel):
     decimals: int = 6
 
 class Wallet(Document):
-    user_id: Indexed(ObjectId)  # Reference to User document
+    user_id: Indexed(PydanticObjectId)  # Reference to User document
     chain: Chain = Chain.SOLANA
     address: str
     encrypted_private_key: str
