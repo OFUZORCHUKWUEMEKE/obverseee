@@ -25,7 +25,7 @@ class Status(str, Enum):
     FAILED = "failed"
 
 
-class PaymentLinkBase(BaseModel):
+class PaymentLink(BaseModel):
     id: Optional[PyObjectId] = Field(alias="_id", default=None)
     linkId: str = Field(default_factory=lambda: str(uuid4()), description="Unique link identifier")
     merchantUserId: str = Field(..., description="ID of the merchant user")
@@ -36,8 +36,8 @@ class PaymentLinkBase(BaseModel):
     description: Optional[str] = None
     singleUse: bool = Field(default=False, description="Whether the link is single-use")
     expiresAt: Optional[datetime] = None
-    webhookUrl: Optional[str] = None
-    redirectUrl: Optional[str] = None
+    webhookUrl: Optional[HttpUrl] = None
+    redirectUrl: Optional[HttpUrl] = None
     status: Status = Field(default=Status.ACTIVE, description="Payment link status")
     paymentTxHash: Optional[str] = None
     paidAt: Optional[datetime] = None
