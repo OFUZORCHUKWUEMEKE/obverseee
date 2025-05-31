@@ -1,9 +1,9 @@
 from beanie import init_beanie
 from motor.motor_asyncio import AsyncIOMotorClient
-from .models.wallet import Wallet
-from .models.paymentlink import PaymentLink
-from .models.transaction import Transaction
-from .models.user import User
+from app.models.wallet import Wallet
+from app.models.paymentlink import PaymentLink
+from app.models.transaction import Transaction
+from app.models.user import User
 
 
 async def init_db():
