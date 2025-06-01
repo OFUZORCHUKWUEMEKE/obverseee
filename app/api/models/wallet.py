@@ -76,5 +76,5 @@ class WalletUpdate(BaseModel):
 class WalletResponse(Wallet):
     class Config:
         json_encoders = {ObjectId: str}
-        allow_population_by_field_name = True
-        fields = {'encrypted_private_key': {'exclude': True}}  # Don't expose private key in responses
+        validate_by_name = True
+        # fields = {'encrypted_private_key': {'exclude': True}}  # Don't expose private key in responses

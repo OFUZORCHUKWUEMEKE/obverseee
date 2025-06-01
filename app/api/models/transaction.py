@@ -98,5 +98,6 @@ class TransactionUpdate(BaseModel):
     usd_value: Optional[float] = None
 
 class TransactionResponse(Transaction):
-    class Config:
-        fields = {'updated_at': {'exclude': True}}  # Optionally exclude fields from response
+    pass
+    # class Config:
+        # fields = {'updated_at': {'exclude': True}}  # Optionally exclude fields from response
