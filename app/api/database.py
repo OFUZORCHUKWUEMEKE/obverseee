@@ -10,9 +10,9 @@ import os
 load_dotenv()
 
 async def init_db():
-    MONGO_URL= os.getenv("MONGO_URL=DATABASE_URL")
-    print(f"mongo url ${MONGO_URL}")
-    client =AsyncIOMotorClient("mongodb+srv://ofuzor:ofuzor2018@cluster0.qjl8f.mongodb.net/obversee?retryWrites=true&w=majority")
+    MONGO_URL= os.getenv("MONGO_URL")
+    print(f"mongo url is ${MONGO_URL}")
+    client =AsyncIOMotorClient(MONGO_URL)
     await init_beanie(database=client.db_name,document_models=[Wallet,PaymentLink,Transaction,User])
 
 

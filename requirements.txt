@@ -7,5 +7,5 @@ typing-extensions
 python-telegram-bot
 pydantic[email]
 beanie
-bson
 fastapi[standard]
+python-dotenv
