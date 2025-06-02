@@ -9,3 +9,6 @@ pydantic[email]
 beanie
 fastapi[standard]
 python-dotenv
+bcrypt
+solana
+cryptography
