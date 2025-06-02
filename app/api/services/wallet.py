@@ -227,10 +227,13 @@ class WalletService:
        fernet = Fernet(key)
        return fernet.decrypt(encrypted_key.encode())
 
+
+    
     def hash_password(password: str) -> str:
       """Hash a password for storing in the database"""
       return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
-
+    
+    @staticmethod()
     def verify_password(stored_hash: str, provided_password: str) -> bool:
       """Verify a stored password against one provided by user"""
       return bcrypt.checkpw(provided_password.encode(), stored_hash.encode())
