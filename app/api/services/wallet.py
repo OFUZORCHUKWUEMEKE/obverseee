@@ -5,6 +5,13 @@ import logging
 from beanie.odm.fields import PydanticObjectId
 from datetime import datetime
 import logging
+from solana.keypair import Keypair
+from solana.publickey import PublicKey
+from cryptography.fernet import Fernet
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+import bcrypt
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -196,3 +203,35 @@ class WalletService:
         except Exception as e:
             logger.error(f"Error deleting wallet {wallet_id}: {str(e)}")
             raise RuntimeError("Failed to delete wallet") from e
+    
+    def generate_encryption_key(password: str, salt: bytes = DEFAULT_ENCRYPTION_SALT) -> bytes:
+        """Derive a secure encryption key from the password"""
+        kdf = PBKDF2HMAC(
+          algorithm=hashes.SHA256(),
+          length=32,
+          salt=salt,
+          iterations=100000,
+        )
+        return base64.urlsafe_b64encode(kdf.derive(password.encode())) 
+
+    def encrypt_private_key(private_key: bytes, password: str) -> str:
+       """Encrypt the private key using the password-derived key"""
+       key = generate_encryption_key(password)
+       fernet = Fernet(key)
+       encrypted_data = fernet.encrypt(private_key)
+       return encrypted_data.decode()
+
+    def decrypt_private_key(encrypted_key: str, password: str) -> bytes:
+       """Decrypt the private key using the password-derived key"""
+       key = generate_encryption_key(password)
+       fernet = Fernet(key)
+       return fernet.decrypt(encrypted_key.encode())
+
+    def hash_password(password: str) -> str:
+      """Hash a password for storing in the database"""
+      return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+
+    def verify_password(stored_hash: str, provided_password: str) -> bool:
+      """Verify a stored password against one provided by user"""
+      return bcrypt.checkpw(provided_password.encode(), stored_hash.encode())
+ 
