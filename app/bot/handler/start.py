@@ -1,9 +1,13 @@
 import os
 from telegram import Update,ReplyKeyboardMarkup, ReplyKeyboardRemove,InlineKeyboardButton,InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, ConversationHandler,CallbackContext, CallbackQueryHandler
+from ...api.services.user import UserService
 import logging
 
 logger = logging.getLogger(__name__)
+
+def get_wallet_service():
+    return UserService
 
 
 async def start_command(update:Update,context:ContextTypes.DEFAULT_TYPE):
