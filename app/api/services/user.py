@@ -4,6 +4,7 @@ from ..repositories.user import UserRepository
 from pydantic import EmailStr
 from beanie.odm.fields import PydanticObjectId
 from datetime import datetime
+from ..models.wallet import Chain
 import logging
 
 logger = logging.getLogger(__name__)
@@ -12,7 +13,7 @@ class UserService:
     def __init__(self,user_repository:UserRepository):
         self.repository = user_repository
     
-    async def create_user(self,user_id:str,username:Optional[EmailStr]=None,default_chain:str="solana"):
+    async def create_user(self,user_id:str,username:Optional[EmailStr]=None,default_chain:str=Chain.SOLANA):
         """
         Creates a new User with basic profile
         """
@@ -24,7 +25,6 @@ class UserService:
         user_data={
             "user_id":user_id,
             "username":username,
-            "email":email,
             "default_chain":default_chain,
             "created_at":datetime.utcnow()
         }

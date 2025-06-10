@@ -19,6 +19,8 @@ class User(Document):
     wallets: List[Link[Wallet]] = Field(default_factory=list)
     default_chain: str = "solana"
     notification_enabled: bool = True
+    email: Optional[str] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
     
     class Settings:
         name = "users"

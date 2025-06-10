@@ -20,6 +20,16 @@ class Token(BaseModel):
     balance: float = 0.0
     contract_address: Optional[str] = None
     decimals: int = 6
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "symbol": StableCoin.USDC,
+                "balance": 100.0,
+                "contract_address": None,
+                "decimals": 6,
+                "mint_address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+            }
+        }
 
 class Wallet(Document):
     user_id: Indexed(PydanticObjectId)  # Reference to User document
@@ -28,6 +38,7 @@ class Wallet(Document):
     encrypted_private_key: str
     tokens: List[Token] = Field(default_factory=list)
     created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at:datetime=Field(default_factory=datetime.utcnow)
 
     class Settings:
         name = "wallets"

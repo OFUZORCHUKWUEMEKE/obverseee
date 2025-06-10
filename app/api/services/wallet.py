@@ -10,14 +10,19 @@ from solana.publickey import PublicKey
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from dotenv import load_dotenv
+from ..models.wallet import Token,Wallet,Chain,StableCoin
 import bcrypt
 import os
+
+load_dotenv()
 
 logger = logging.getLogger(__name__)
 
 class WalletService:
     def __init__(self, wallet_repository: WalletRepository):
         self.repository = wallet_repository
+        self.encrypt_private_key = os.getenv("ENCRYPTION_KEY")
 
     async def create_wallet(
         self,
@@ -203,38 +208,57 @@ class WalletService:
         except Exception as e:
             logger.error(f"Error deleting wallet {wallet_id}: {str(e)}")
             raise RuntimeError("Failed to delete wallet") from e
+
+    def generate_encryption_key():
+       """Generate and return a Fernet key"""
+       return Fernet.generate_key()
     
-    def generate_encryption_key(password: str, salt: bytes = DEFAULT_ENCRYPTION_SALT) -> bytes:
-        """Derive a secure encryption key from the password"""
-        kdf = PBKDF2HMAC(
-          algorithm=hashes.SHA256(),
-          length=32,
-          salt=salt,
-          iterations=100000,
+    def encrypt_private_key(private_key: bytes) -> str:
+       """Encrypt a private key using Fernet symmetric encryption"""
+       return fernet.encrypt(private_key).decode('utf-8')
+
+    def decrypt_private_key(encrypted_key: str) -> bytes:
+       """Decrypt an encrypted private key"""
+       return fernet.decrypt(encrypted_key.encode('utf-8'))
+    
+
+    async def create_solana_wallet(user_id:str)->Wallet:
+        """
+        Creates a new solana wallet , encypts the private key , and stores it in MongoDB
+
+        Args:
+           user_id:The ID of the user who owns this wallet
+
+        Returns:
+           Wallets: The created wallet document
+           
+        """
+        keypair = Keypair()
+        public_key = str(keypair.public_key)
+        private_key = bytes(keypair.seed)
+
+        encrypted_private_key = encrypted_private_key(private_key)
+        usdc_token = Token(
+           symbol=StableCoin.USDC,
+           balance=0.0,
+           contract_address="EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+           decimals=6
         )
-        return base64.urlsafe_b64encode(kdf.derive(password.encode())) 
+        usdt_token = Token(
+            symbol=StableCoin.USDT,
+            balance=0.0,
+            contract_address="Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB",
+            decimals=6
+        )
 
-    def encrypt_private_key(private_key: bytes, password: str) -> str:
-       """Encrypt the private key using the password-derived key"""
-       key = generate_encryption_key(password)
-       fernet = Fernet(key)
-       encrypted_data = fernet.encrypt(private_key)
-       return encrypted_data.decode()
-
-    def decrypt_private_key(encrypted_key: str, password: str) -> bytes:
-       """Decrypt the private key using the password-derived key"""
-       key = generate_encryption_key(password)
-       fernet = Fernet(key)
-       return fernet.decrypt(encrypted_key.encode())
-
-
-    
-    def hash_password(password: str) -> str:
-      """Hash a password for storing in the database"""
-      return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
-    
-    @staticmethod()
-    def verify_password(stored_hash: str, provided_password: str) -> bool:
-      """Verify a stored password against one provided by user"""
-      return bcrypt.checkpw(provided_password.encode(), stored_hash.encode())
+        wallet = Wallet(
+            user_id=user_id,
+            chain=Chain.SOLANA,
+            address=public_key,
+            encrypted_private_key=encrypted_private_key,
+            created_at=datetime.utcnow(),
+            tokens=[usdc_token,usdt_token]
+        )
+        await wallet.insert()
+        return wallet
  
