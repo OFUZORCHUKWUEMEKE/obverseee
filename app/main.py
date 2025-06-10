@@ -1,11 +1,27 @@
 from fastapi import FastAPI
+from contextlib import asynccontextmanager
 from api.database import init_db
+from bot.bot import start_bot
+import logging
 
-app = FastAPI()
 
-@app.on_event("startup")
-async def startup():
-    await init_db()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Manage application lifespan events."""
+    # Startup
+    logging.info("Starting up FastAPI application...")
+    await start_bot()
+    logging.info("FastAPI application started successfully")
+    
+    yield
+    
+    # Shutdown
+    logging.info("Shutting down FastAPI application...")
+    await stop_bot()
+    logging.info("FastAPI application shut down successfully")
+
+
+app = FastAPI(lifespan=lifespan)
 
 @app.get("/")
 async def root():
