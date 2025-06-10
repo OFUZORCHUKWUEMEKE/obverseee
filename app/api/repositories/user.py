@@ -1,6 +1,6 @@
-from app.api.models.user import User
+from api.models.user import User
 from typing import Optional
-from app.api.repositories.base import BaseRepository
+from api.repositories.base import BaseRepository
 
 class UserRepository(BaseRepository[User]):
     def __init__(self):

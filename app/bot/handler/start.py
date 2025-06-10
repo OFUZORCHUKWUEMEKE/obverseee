@@ -1,10 +1,16 @@
 import os
 from telegram import Update,ReplyKeyboardMarkup, ReplyKeyboardRemove,InlineKeyboardButton,InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, ConversationHandler,CallbackContext, CallbackQueryHandler
-# from ...api.services.user import UserService
-from ...api.repositories.user import UserRepository
-from ...api.services.user import UserService
-from ...api.services.wallet import WalletService
+from api.repositories.user import UserRepository
+from api.services.user import UserService
+from api.services.wallet import WalletService
+from api.repositories.wallet import WalletRepository
+from dotenv import load_dotenv
+
+load_dotenv()
+
+
+
 from fastapi import Fastapi,Depends
 import logging
 
