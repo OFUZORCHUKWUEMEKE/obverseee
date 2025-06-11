@@ -14,41 +14,60 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 async def get_user_service():
-    return UserService
+    # Assuming you have access to user_repository here
+    user_repository = UserRepository()  # You'll need to create this
+    return UserService(user_repository)  # Return an INSTANCE, not the class
 
 async def get_wallet_service():
-    return WalletService
+    wallet_repository = WalletRepository()
+    return WalletService(wallet_repository)
 
 
 
-async def start_command(update:Update,context:ContextTypes.DEFAULT_TYPE,user_service:UserService=Depends(get_user_service),wallet_service:WalletService=Depends(get_wallet_service)):
-    user_info = update.message.from_user
-    telegram_user = update.effective_user # Extract user details
+async def start_command(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+) -> None:
     """Handle the /start command."""
     user = update.effective_user
-    exixting_user = await user_service.get_user(str(user.id))
-    if existing_user:
-        await update.message.reply_text(
-            f"Hello! {user_info.first_name} , Welcome to Obverse\n"
-            f"Obverse is a Stablecoin Payment management agent that helps businesses / Individuals collect fiat payments through links and QRcodes\n"
+    user_info = update.message.from_user
+
+    user_service = await get_user_service()
+    wallet_service = await get_wallet_service()
+    
+    try:
+        existing_user = await user_service.get_user(str(user.id))
+        print(existing_user)
+        
+        welcome_message = (
+            f"👋 Hello {user_info.first_name}, Welcome to Obverse!\n\n"
+            "Obverse is a Stablecoin Payment management agent that helps businesses/Individuals "
+            "collect fiat payments through links and QR codes.\n"
+            "Use the menu below to get started or type /help for more information."
         )
-    user_created = await user_service.create_user(
-            str(user.id),
-            username=user.username,
+        
+        if not existing_user:
+            # Create new user if doesn't exist
+            user_created = await user_service.create_user(
+                str(user.id),
+                username=user.username,
             )
-    wallets = await wallet_service.get_user_wallets(str(user_created.id))
-    if not wallets:
-        new_wallet = await wallet_service.create_solana_wallet(str(user_created.id))
-        await user_service.add_wallet_to_user(str(user.id),new_wallet.id)
-    # Log user interaction
-    logger.info(f"User {user.id} ({user.username}) started the bot")
-    
-    welcome_message = (
-        f"👋 Hello {user.first_name}!\n\n"
-        "Welcome to our Obverse! I'm here to help you with various tasks.\n"
-        "Use the menu below to get started or type /help for more information."
-    )
-    
-    await update.message.reply_text(
-        welcome_message,
-    )
+            # Create default wallet for new user
+            wallets = await wallet_service.get_user_wallets(str(user_created.id))
+            if not wallets:
+                new_wallet = await wallet_service.create_solana_wallet(str(user_created.id))
+                await user_service.add_wallet_to_user(str(user.id), new_wallet.id)
+                welcome_message += "\n\nA new Solana wallet has been created for you!"
+        
+        # Send welcome message to all users
+        await update.message.reply_text(welcome_message)
+        
+        # Log user interaction
+        logger.info(f"User {user.id} ({user.username}) started the bot")
+        
+    except Exception as e:
+        logger.error(f"Error in start command for user {user.id}: {str(e)}")
+        await update.message.reply_text(
+            "⚠️ An error occurred while processing your request. Please try again later."
+        )
+        raise

@@ -11,7 +11,9 @@ async def lifespan(app: FastAPI):
     # Startup
     logging.info("Starting up FastAPI application...")
     await start_bot()
+    await init_db()
     logging.info("FastAPI application started successfully")
+    logging.info("MongoDB database connected successfully")
     
     yield
     
