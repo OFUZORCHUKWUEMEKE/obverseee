@@ -6,13 +6,10 @@ from api.services.user import UserService
 from api.services.wallet import WalletService
 from api.repositories.wallet import WalletRepository
 from dotenv import load_dotenv
+from fastapi import FastAPI,Depends
+import logging
 
 load_dotenv()
-
-
-
-from fastapi import Fastapi,Depends
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +18,7 @@ async def get_user_service():
 
 async def get_wallet_service():
     return WalletService
+
 
 
 async def start_command(update:Update,context:ContextTypes.DEFAULT_TYPE,user_service:UserService=Depends(get_user_service),wallet_service:WalletService=Depends(get_wallet_service)):

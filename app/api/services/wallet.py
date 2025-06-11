@@ -1,12 +1,14 @@
-from typing import Optional , List
+from typing import Optional , List,Dict
 from ..models.wallet import Wallet,Chain
 from ..repositories.wallet import WalletRepository
 import logging
 from beanie.odm.fields import PydanticObjectId
 from datetime import datetime
 import logging
-from solana.keypair import Keypair
-from solana.publickey import PublicKey
+# from solana.keypair import Keypair
+from solders.keypair import Keypair
+from solders.pubkey import Pubkey
+# from solana.publickey import PublicKey
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC

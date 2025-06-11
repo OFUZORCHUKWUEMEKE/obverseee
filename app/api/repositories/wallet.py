@@ -1,6 +1,7 @@
-from app.api.models.wallet import Wallet
-from app.api.repositories.base import BaseRepository
+from api.models.wallet import Wallet
+from api.repositories.base import BaseRepository
 from bson import ObjectId
+from typing import Optional,List
 
 class WalletRepository(BaseRepository[Wallet]):
     def __init__(self):

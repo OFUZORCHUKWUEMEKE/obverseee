@@ -1,6 +1,6 @@
 from typing import Type , TypeVar , Generic , Optional , List , Dict , Any 
 from beanie import Document
-from pymango.results import DeleteResult , UpdateResult
+# from pymango.results import DeleteResult , UpdateResult
 
 T = TypeVar('T',bound=Document)
 

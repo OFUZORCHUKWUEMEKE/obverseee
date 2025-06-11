@@ -11,4 +11,5 @@ fastapi[standard]
 python-dotenv
 bcrypt
 solana
+solders
 cryptography
