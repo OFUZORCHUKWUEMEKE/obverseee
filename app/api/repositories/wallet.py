@@ -15,6 +15,12 @@ class WalletRepository(BaseRepository[Wallet]):
             "user_id":ObjectId(user_id),
             "chain":chain
         })
+        
+    async def get_single_user_wallet(self,user_id:str,chain:str)->Wallet:
+        return await self.find_one({
+            "user_id":ObjectId(user_id),
+            "chain":chain
+        })
     
     async def add_token_to_wallet(self,wallet_id:str,token_data:dict)->Optional[Wallet]:
         return await self.update(wallet_id,{"$push":{"token":token_data}})

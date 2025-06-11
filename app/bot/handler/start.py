@@ -22,8 +22,6 @@ async def get_wallet_service():
     wallet_repository = WalletRepository()
     return WalletService(wallet_repository)
 
-
-
 async def start_command(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE,
@@ -36,9 +34,7 @@ async def start_command(
     wallet_service = await get_wallet_service()
     
     try:
-        existing_user = await user_service.get_user(str(user.id))
-        print(existing_user)
-        
+        existing_user = await user_service.get_user(str(user.id))    
         welcome_message = (
             f"👋 Hello {user_info.first_name}, Welcome to Obverse!\n\n"
             "Obverse is a Stablecoin Payment management agent that helps businesses/Individuals "
@@ -52,11 +48,15 @@ async def start_command(
                 str(user.id),
                 username=user.username,
             )
+            # user_created = await user_service.get_user(str(user.id))
+            # print(user_created)
             # Create default wallet for new user
             wallets = await wallet_service.get_user_wallets(str(user_created.id))
             if not wallets:
+                # wallets = await wallet_service.get_user_wallets(str(user_created.id))
                 new_wallet = await wallet_service.create_solana_wallet(str(user_created.id))
-                await user_service.add_wallet_to_user(str(user.id), new_wallet.id)
+                # logger.info("Created new Solana wallet for user")
+                await user_service.add_wallet_to_user(str(user.id), wallet_id=new_wallet.id)
                 welcome_message += "\n\nA new Solana wallet has been created for you!"
         
         # Send welcome message to all users

@@ -14,8 +14,11 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from dotenv import load_dotenv
 from ..models.wallet import Token,Wallet,Chain,StableCoin
+from cryptography.hazmat.backends import default_backend
+from beanie.odm.fields import PydanticObjectId
 import bcrypt
 import os
+import base64
 
 load_dotenv()
 
@@ -24,7 +27,7 @@ logger = logging.getLogger(__name__)
 class WalletService:
     def __init__(self, wallet_repository: WalletRepository):
         self.repository = wallet_repository
-        self.encrypt_private_key = os.getenv("ENCRYPTION_KEY")
+        # self.encrypt_private_key = os.getenv("ENCRYPTION_KEY")
 
     async def create_wallet(
         self,
@@ -67,6 +70,19 @@ class WalletService:
         except Exception as e:
             logger.error(f"Error fetching wallet {wallet_id}: {str(e)}")
             raise RuntimeError("Failed to fetch wallet") from e
+    
+    async def get_user_wallet(self,user_id,chain:Optional[Chain]=None)->Wallet:
+        """
+        Retrieves Single Wallet for a user
+        """
+        try:
+            wallet = self.repository.get_single_user_wallet(user_id,chain)
+            return wallet
+        except Exception as e:
+            logger.error(f"Error fetching wallet {user_id}: {str(e)}")
+            raise RuntimeError("Failed to fetch wallet") from e
+            
+
 
     async def get_user_wallets(
         self,
@@ -79,7 +95,7 @@ class WalletService:
         try:
             if chain:
                 return await self.repository.get_by_user_and_chain(user_id, chain)
-            return await self.repository.find_many({"user_id": ObjectId(user_id)})
+            return await self.repository.find_many({"user_id": PydanticObjectId(user_id)})
         except Exception as e:
             logger.error(f"Error fetching wallets for user {user_id}: {str(e)}")
             raise RuntimeError("Failed to fetch user wallets") from e
@@ -210,36 +226,103 @@ class WalletService:
         except Exception as e:
             logger.error(f"Error deleting wallet {wallet_id}: {str(e)}")
             raise RuntimeError("Failed to delete wallet") from e
+    
+    def generate_fernet_key(self,password: str = None, salt: bytes = None) -> tuple:
+        """
+        Generate a Fernet encryption key.
+    
+        Args:
+            password: If provided, generates key from password (otherwise random)
+            salt: Salt for password derivation (random if None)
+        
+        Returns:
+            tuple: (encryption_key, salt_used) if password, else (encryption_key,)
+        """
+        if password:
+            salt = salt or os.urandom(16)
+            kdf = PBKDF2HMAC(
+                algorithm=hashes.SHA256(),
+                length=32,
+                salt=salt,
+                iterations=100000,
+                backend=default_backend()
+            )
+            key = base64.urlsafe_b64encode(kdf.derive(password.encode()))
+            return key, salt
+        else:
+            return Fernet.generate_key(),    
 
     def generate_encryption_key():
        """Generate and return a Fernet key"""
        return Fernet.generate_key()
     
-    def encrypt_private_key(private_key: bytes) -> str:
-       """Encrypt a private key using Fernet symmetric encryption"""
-       return fernet.encrypt(private_key).decode('utf-8')
-
-    def decrypt_private_key(encrypted_key: str) -> bytes:
-       """Decrypt an encrypted private key"""
-       return fernet.decrypt(encrypted_key.encode('utf-8'))
-    
-
-    async def create_solana_wallet(user_id:str)->Wallet:
+    def encrypt_private_key(self,keypair: Keypair, encryption_key: bytes) -> str:
         """
-        Creates a new solana wallet , encypts the private key , and stores it in MongoDB
-
+        Encrypt a Solana private key.
+    
         Args:
-           user_id:The ID of the user who owns this wallet
-
+            keypair: Keypair from solders library
+            encryption_key: Fernet encryption key
+        
         Returns:
-           Wallets: The created wallet document
-           
+            str: Base64 encoded encrypted private key
+        """
+        fernet = Fernet(encryption_key)
+        private_key_bytes = bytes(keypair)
+        encrypted = fernet.encrypt(private_key_bytes)
+        return base64.b64encode(encrypted).decode('utf-8')
+
+    def decrypt_to_keypair(self,encrypted_key: str, encryption_key: bytes) -> Keypair:
+        """
+        Decrypt an encrypted private key back to Keypair.
+    
+        Args:
+            encrypted_key: Base64 encoded encrypted private key
+            encryption_key: Fernet encryption key used to encrypt
+        
+        Returns:
+            Keypair: Restored Solana keypair
+        """
+        fernet = Fernet(encryption_key)
+        encrypted_bytes = base64.b64decode(encrypted_key.encode('utf-8'))
+        private_key_bytes = fernet.decrypt(encrypted_bytes)
+        return Keypair.from_bytes(private_key_bytes)
+    
+    def generate_new_keypair(self,encryption_key: bytes) -> tuple:
+        """
+        Generate new keypair and return both keypair and encrypted private key.
+        Args:
+            encryption_key: Fernet encryption key
+        Returns:
+            tuple: (Keypair, encrypted_private_key_str)
         """
         keypair = Keypair()
-        public_key = str(keypair.public_key)
-        private_key = bytes(keypair.seed)
+        encrypted = self.encrypt_private_key(keypair, encryption_key)
+        return keypair, encrypted    
+    
+    async def create_solana_wallet(self,user_id:str)->Wallet:
+        """
+        Creates a new solana wallet , encypts the private key , and stores it in MongoDB
+        Args:
+           user_id:The ID of the user who owns this wallet
+        Returns:
+           Wallets: The created wallet document  
+        """
+        # Password-based encryption
+        password = "my-strong-password-123"
+        derived_key ,salt = self.generate_fernet_key(password=password)
+        kp,enc_priv = self.generate_new_keypair(derived_key)
 
-        encrypted_private_key = encrypted_private_key(private_key)
+        # Encrypt existing keypair with password
+        pw_encrypted = self.encrypt_private_key(kp,derived_key)
+        # print(f"Password-Encrypted: {pw_encrypted}")
+        # Decrypt with password (must use same password and salt)
+        pw_restored = self.decrypt_to_keypair(pw_encrypted, derived_key)
+        print(f"Password-Restored: {pw_restored.pubkey()}")
+        public_key = str(pw_restored.pubkey())
+        private_key = pw_encrypted
+
+       
         usdc_token = Token(
            symbol=StableCoin.USDC,
            balance=0.0,
@@ -252,12 +335,12 @@ class WalletService:
             contract_address="Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB",
             decimals=6
         )
-
+        print(f"Public Key: {public_key}")
         wallet = Wallet(
-            user_id=user_id,
+            user_id=PydanticObjectId(user_id),
             chain=Chain.SOLANA,
             address=public_key,
-            encrypted_private_key=encrypted_private_key,
+            encrypted_private_key=pw_encrypted,
             created_at=datetime.utcnow(),
             tokens=[usdc_token,usdt_token]
         )

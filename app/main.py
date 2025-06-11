@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from api.database import init_db
-from bot.bot import start_bot
+from bot.bot import start_bot,stop_bot
 import logging
 
 
