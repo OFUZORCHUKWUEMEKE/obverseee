@@ -69,7 +69,6 @@ class JupiterSwap:
            Args:
                quote: Quote data from get_quote
                user_public_key: User's wallet public key as string
-            
            Returns:
                Serialized transaction or None if failed
         """
@@ -91,18 +90,15 @@ class JupiterSwap:
     def execute_swap(self,keypair:Keypair,swap_transaction:str)->Optional[str]:
         """
         Execute the swap transaction
-
         Args:
           keypair: User's Solana Keypair
           swap_transaction: Serialized transaction from get_swap
-
         Returns:
           Transaction signature or None if failed
         """
         try:
             transaction_bytes = base64.b64decode(swap_transaction)
             transation = Transaction.deserialize(transaction_bytes)
-
             # sign transaction
             transaction.sign(keypair)
             # send transaction
@@ -120,7 +116,6 @@ class JupiterSwap:
     def swap_sol_to_usdc(self,keypair:Keypair,sol_amount:float,slippage_bps:int=50)->Optional[str]:
         """
         Swap SOL to USDC
-
         Args: 
           Keypair : User's Solana keypair
           sol_amount: Amount of SOL to swap
@@ -146,7 +141,6 @@ class JupiterSwap:
           Keypair : User's Solana keypair
           sol_amount: Amount of SOL to swap
           slippage_bps: Slippage in basis points (50 = 0.5%)
-
         Returns:
           Transaction signature or None if failed
         """
@@ -161,25 +155,20 @@ class JupiterSwap:
         )
         if not quote:
             return None
-        print(f"Quote received: ~{float(quote['outAmount']) / 1_000_000:.2f} USDT")
-        
+        print(f"Quote received: ~{float(quote['outAmount']) / 1_000_000:.2f} USDT") 
         # Get swap transaction
-        swap_tx = self.get_swap_transaction(quote, str(keypair.pubkey()))
-        
+        swap_tx = self.get_swap_transaction(quote, str(keypair.pubkey()))        
         if not swap_tx:
-            return None
-        
+            return None       
         # Execute swap
         return self.execute_swap(keypair,swap_tx)
 
     def get_token_balance(self,wallet_addressLstr,token_mint:str)->float:
         """
           Get token balance for a wallet
-        
         Args:
             wallet_address: Wallet public key as string
             token_mint: Token mint address
-            
         Returns:
             Token balance
         """
