@@ -60,7 +60,7 @@ class PaymentLink(Document):
                 "amount": "10.5",
                 "token_address": "0x...",
                 "token_symbol": "USDC",
-                "chain": Chain.ETHEREUM,
+                "chain": Chain.SOLANA,
                 "description": "Payment for services",
                 "single_use": True,
                 "expires_at": "2023-12-31T23:59:59",
