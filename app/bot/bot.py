@@ -13,6 +13,7 @@ from telegram.ext import (
 from .handler.start import start_command
 from .handler.help import help_command
 from .handler.fund import fund_command
+from .handler.balance import balance_command
 from .config.config import config
 import logging
 from typing import Optional
@@ -33,6 +34,7 @@ async def setup_handlers(application: Application) -> None:
     application.add_handler(CommandHandler("start", start_command))
     application.add_handler(CommandHandler("help", help_command))
     application.add_handler(CommandHandler("fund",fund_command))
+    application.add_handler(CommandHandler("balance",balance_command))
     
     # Add more handlers here as needed
     # Example:

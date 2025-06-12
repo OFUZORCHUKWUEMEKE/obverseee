@@ -16,6 +16,7 @@ from dotenv import load_dotenv
 from ..models.wallet import Token,Wallet,Chain,StableCoin
 from cryptography.hazmat.backends import default_backend
 from beanie.odm.fields import PydanticObjectId
+from solana.rpc.api import Client
 import bcrypt
 import os
 import base64
@@ -27,6 +28,7 @@ logger = logging.getLogger(__name__)
 class WalletService:
     def __init__(self, wallet_repository: WalletRepository):
         self.repository = wallet_repository
+        self.rpc = os.getenv("SOLANA_RPC_URL")
         # self.encrypt_private_key = os.getenv("ENCRYPTION_KEY")
 
     async def create_wallet(
@@ -346,4 +348,47 @@ class WalletService:
         )
         await wallet.insert()
         return wallet
+
+    async def check_wallet_balance(self,wallet_address)->float:
+        """
+        Check the SOL balance of a Solana wallet address using a Helium RPC endpoint.
+
+        Args:
+        wallet_address (str): The public key of the wallet to check (base-58 encoded string).
+        helium_rpc_url (str): The Helium RPC endpoint URL.
+    
+        Returns:
+        float: The wallet balance in SOL.
+    
+        Raises:
+        ValueError: If the wallet address is invalid.
+        Exception: If there's an error connecting to the RPC or fetching the balance.
+        """
+        try:
+            # Initialise solana client with Helium RPC endpoint
+            client = Client(self.rpc)
+            try:
+                pubkey = Pubkey.from_string(wallet_address)
+            except ValueError as e:
+                raise ValueError(f"Invalid wallet address: {str(e)}")
+            response = client.get_balance(pubkey)
+            # Check if response is valid and access balance
+            if not hasattr(response, 'value'):
+                raise Exception("Failed to fetch balance: Invalid RPC response")
+        
+            balance_lamports = response.value
+        
+            # Convert lamports to SOL (1 SOL = 1_000_000_000 lamports)
+            balance_sol = balance_lamports / 1_000_000_000
+        
+            return balance_sol
+            
+            # if "results" not in response or "value" not in response["result"]:
+            #     raise Exception("Failed to fetch balance:Invalid RPC Response")
+            # balance_lamports = response["result"]["value"]
+            # balance_sol = balance_lamports / 1_000_000_000
+            # return balance_sol
+        except Exception as e:
+            raise Exception(f"Error fetching wallet balance : {str(e)}")
+
  

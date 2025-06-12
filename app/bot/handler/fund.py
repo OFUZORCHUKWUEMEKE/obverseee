@@ -25,7 +25,7 @@ async def get_wallet_service():
 
 async def fund_command( update: Update,
     context: ContextTypes.DEFAULT_TYPE)->None:
-    """Handle the /start command."""
+    """Handle the /fund command."""
     user = update.effective_user
     user_info = update.message.from_user
     user_service = await get_user_service()
