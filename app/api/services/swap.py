@@ -37,7 +37,6 @@ class JupiterSwap:
     def get_quote(self,input_mint: str, output_mint: str, amount: int, slippage_bps: int = 50)->Dict:
          """
         Get a quote for swapping tokens
-        
         Args:
             input_mint: Input token mint address
             output_mint: Output token mint address
@@ -47,5 +46,23 @@ class JupiterSwap:
         Returns:
             Quote data or None if failed
         """
+         try:
+            url = f"{self.jupiter_base_url}/quote"
+            params = {
+                "inputMint": input_mint,
+                "outputMint": output_mint,
+                "amount": amount,
+                "slippageBps": slippage_bps,
+                "onlyDirectRoutes": "false",
+                "asLegacyTransaction": "false"
+            }
+            response = requests.get(url, params=params)
+            response.raise_for_status()
+            return response.json()
+         except requests.exceptions.RequestException as e:
+            print(f"Error getting quote: {e}")
+            return None
+
+
 
 
