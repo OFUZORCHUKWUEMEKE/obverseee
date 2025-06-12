@@ -63,6 +63,34 @@ class JupiterSwap:
             print(f"Error getting quote: {e}")
             return None
 
+    def get_swap(self, quote: Dict, user_public_key: str)->Optional[str]:
+        """
+           Get swap transaction from Jupiter        
+           Args:
+               quote: Quote data from get_quote
+               user_public_key: User's wallet public key as string
+            
+           Returns:
+               Serialized transaction or None if failed
+        """
+        try:
+            url = f"{self.jupiter_base_url}/swap"
+            params = {
+                "quote": quote,
+                "userPublicKey": user_public_key,
+                "wrapAndUnwrapSol": True,
+                "dynamicComputeUnitLimit": True,
+                "prioritizationFeeLamports": "auto"
+            }
+            response = requests.post(url, json=params,headers={"Content-Type": "application/json"})
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.RequestException as e:
+            print(f"Error getting swap: {e}")
+
+    
+
+
 
 
 
