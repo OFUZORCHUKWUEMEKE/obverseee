@@ -74,7 +74,7 @@ class UserService:
 
         if not update_data:
             raise ValueError("No valid fields provided for update")
-
+            
         try:
             updated_user = await self.repository.update(user_id, {"$set": update_data})
             if updated_user:

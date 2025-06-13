@@ -34,7 +34,8 @@ async def start_command(
     wallet_service = await get_wallet_service()
     
     try:
-        existing_user = await user_service.get_user(str(user.id))    
+        existing_user = await user_service.get_user(str(user.id))
+        # print(existing_user)    
         welcome_message = (
             f"👋 Hello {user_info.first_name}, Welcome to Obverse!\n\n"
             "Obverse is a Stablecoin Payment management agent that helps businesses/Individuals "
@@ -52,6 +53,7 @@ async def start_command(
             # print(user_created)
             # Create default wallet for new user
             wallets = await wallet_service.get_user_wallets(str(user_created.id))
+            print(f"wallets",wallets)
             if not wallets:
                 # wallets = await wallet_service.get_user_wallets(str(user_created.id))
                 new_wallet = await wallet_service.create_solana_wallet(str(user_created.id))

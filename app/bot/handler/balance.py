@@ -36,6 +36,7 @@ async def balance_command(update: Update,
         if not user:
             raise ValueError("User not Found in DB")
         wallets = await wallet_service.get_user_wallets(str(user.id),chain=Chain.SOLANA)
+        print(wallets)
         address = wallets[0].address
         balance = await wallet_service.check_wallet_balance(address)
         print(balance);
