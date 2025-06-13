@@ -183,7 +183,6 @@ class JupiterSwap:
                     Pubkey.from_string(wallet_address),
                     {"mint": Pubkey.from_string(token_mint)}
                 )
-                
                 if response.value:
                     account_info = self.client.get_account_info(response.value[0].pubkey)
                     # Parse token account data (simplified)
