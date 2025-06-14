@@ -28,6 +28,7 @@ async def get_users(user:UserService=Depends(get_user_service)):
     """
     try:
         user = await user.repository.get_all()
+        print(user)
         return user
     except RuntimeError as e:
         raise
