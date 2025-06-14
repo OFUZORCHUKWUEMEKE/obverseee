@@ -15,4 +15,3 @@ async def init_db():
     await init_beanie(database=client.get_default_database(),document_models=[Wallet,PaymentLink,Transaction,User])
 
 
-

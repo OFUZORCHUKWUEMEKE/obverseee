@@ -24,7 +24,7 @@ UserServiceDep = Annotated[UserService,Depends(get_user_service)]
 @users_router.get("/")
 async def get_users(user:UserService=Depends(get_user_service)):
     """
-    Create a new User
+    Gets all Users
     """
     try:
         user = await user.repository.get_all()
