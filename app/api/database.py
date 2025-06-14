@@ -12,8 +12,7 @@ load_dotenv()
 async def init_db():
     MONGO_URL= os.getenv("MONGO_URL")
     client =AsyncIOMotorClient(MONGO_URL)
-    await init_beanie(database=client.db_name,document_models=[Wallet,PaymentLink,Transaction,User])
-
+    await init_beanie(database=client.get_default_database(),document_models=[Wallet,PaymentLink,Transaction,User])
 
 
 

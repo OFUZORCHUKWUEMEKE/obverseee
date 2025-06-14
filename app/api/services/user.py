@@ -21,14 +21,12 @@ class UserService:
         if existing_user:
             logger.warning(f"User creation failed - already exixts :{user_id}")
             raise ValueError(f"User with ID {user_id} already exists")
-
         user_data={
             "user_id":user_id,
             "username":username,
             "default_chain":default_chain,
             "created_at":datetime.utcnow()
         }
-
         try:
             new_user = User(**user_data)
             created_user = await self.repository.create(new_user)
