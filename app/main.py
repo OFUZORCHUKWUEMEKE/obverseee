@@ -3,6 +3,8 @@ from contextlib import asynccontextmanager
 from api.database import init_db
 from bot.bot import start_bot,stop_bot
 import logging
+from api.routes.users import users_router
+from api.routes.wallets import wallet_router
 
 
 @asynccontextmanager
@@ -24,6 +26,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+app.include_router(users_router)
+app.include_router(wallet_router)
 
 @app.get("/")
 async def root():
