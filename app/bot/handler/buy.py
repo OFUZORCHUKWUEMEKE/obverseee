@@ -54,7 +54,6 @@ The Obverse Team ✨
             )
             await update.message.reply_text(text=balance_message,parse_mode='markdown',disable_web_page_preview=True)
 
-          
         # await update.message.reply_text(text=balance_message,parse_mode='markdown',disable_web_page_preview=True)
     except Exception as e:
         logger.error(f"Error in fund command for user {user.id}: {str(e)}")
