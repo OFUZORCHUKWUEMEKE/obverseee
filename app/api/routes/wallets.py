@@ -28,7 +28,6 @@ async def get_all_wallets(wallets:WalletService=Depends(get_wallet_service)):
     """
     try:
         wallet = await wallets.repository.get_all()
-        print(wallet)
         return wallet
     except RuntimeError as e:
         raise

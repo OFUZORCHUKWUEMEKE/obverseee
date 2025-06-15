@@ -2,9 +2,11 @@ import requests
 import json
 from typing import Dict, Any, Optional
 from solana.rpc.api import Client
-from solana.keypair import Keypair
-from solana.transaction import Transaction
+# from solana.keypair import Keypair
+# from solana.transaction import Transaction
 from solders.pubkey import Pubkey
+from solders.keypair import Keypair
+from solders.transaction import Transaction
 import base64
 import time
 import os
@@ -24,7 +26,7 @@ class JupiterSwap:
             rpc_url: Solana RPC endpoint URL
         """
         self.rpc_url = os.getenv("SOLANA_RPC_URL")
-        self.client = Client(rpc_url)
+        self.client = Client(self.rpc_url)
         self.jupiter_base_url = "https://quote-api.jup.ag/v6"
 
          # Token addresses
@@ -163,7 +165,7 @@ class JupiterSwap:
         # Execute swap
         return self.execute_swap(keypair,swap_tx)
 
-    def get_token_balance(self,wallet_addressLstr,token_mint:str)->float:
+    def get_token_balance(self,wallet_address:str,token_mint:str)->float:
         """
           Get token balance for a wallet
         Args:

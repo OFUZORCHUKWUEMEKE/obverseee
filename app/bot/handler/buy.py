@@ -1,12 +1,12 @@
 from telegram import Update,ReplyKeyboardMarkup, ReplyKeyboardRemove,InlineKeyboardButton,InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, ConversationHandler,CallbackContext, CallbackQueryHandler
+from dotenv import load_dotenv
 from api.repositories.user import UserRepository
 from api.services.user import UserService
 from api.services.wallet import WalletService
 from api.repositories.wallet import WalletRepository
-from api.models.wallet import Chain
 from api.services.swap import JupiterSwap
-from dotenv import load_dotenv
+from api.models.wallet import Chain
 import os
 import logging
 
@@ -23,50 +23,45 @@ async def get_wallet_service():
     wallet_repository = WalletRepository()
     return WalletService(wallet_repository)
 
-
-async def balance_command(update: Update,
+async def buy_command(update: Update,
     context: ContextTypes.DEFAULT_TYPE)->None:
-    """Handle the /balance command."""
+    """
+    Handle the /balance command.
+    Buy Stablecoin USDT / USDC
+    """
     user = update.effective_user
     user_info = update.message.from_user
     user_service = await get_user_service()
     wallet_service = await get_wallet_service()
     swap = JupiterSwap()
-    
+
     try:
         user = await user_service.get_user(str(user.id))
         if not user:
             raise ValueError("User not Found in DB")
         wallets = await wallet_service.get_user_wallets(str(user.id),chain=Chain.SOLANA)
-        print(wallets)
         address = wallets[0].address
         sol_mint = swap.tokens["SOL"]
-        balance = await wallet_service.check_wallet_balance(address)
-        # bal =  swap.get_token_balance(address,sol_mint)
-        print(balance);
-        # print(bal)
-        balance_message = (
+        bal =  swap.get_token_balance(address,sol_mint)
+        if bal == 0.0 :
+            balance_message = (
                 f"""
-Thank you for using Obverse! Here's the current balance for your Solana wallet:
-
-** Solana Address**:  
-**Address**: `{address}` *(Tap to copy)*
-Balance: `{balance}` SOL
-
-Stay in control of your assets with Obverse. If you have any questions or need assistance, our support team is here to help!
+💰 Your current balance is insufficient for this transaction. Please deposit /fund to proceed. 🔄
 
 Best regards,
-The Obverse Team
-"""
-        )
-        await update.message.reply_text(text=balance_message,parse_mode='markdown',disable_web_page_preview=True)
-    except Exception as e :
+The Obverse Team ✨
+                    """
+            )
+            await update.message.reply_text(text=balance_message,parse_mode='markdown',disable_web_page_preview=True)
+
+          
+        # await update.message.reply_text(text=balance_message,parse_mode='markdown',disable_web_page_preview=True)
+    except Exception as e:
         logger.error(f"Error in fund command for user {user.id}: {str(e)}")
         await update.message.reply_text(
             "⚠️ An error occurred while processing your request. Please try again later."
         )
         raise
-
 
 
 
