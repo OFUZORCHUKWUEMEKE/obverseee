@@ -14,7 +14,7 @@ from .handler.start import start_command
 from .handler.help import help_command
 from .handler.fund import fund_command
 from .handler.balance import balance_command
-from .handler.buy import buy_command
+from .handler.buy import start_transaction, cancel_transaction, amount_received,timeout_handler,transaction_confirmed,currency_selected,CHOOSE_CURRENCY,INPUT_AMOUNT,CONFIRM_TRANSACTION
 from .config.config import config
 import logging
 from typing import Optional
@@ -36,7 +36,28 @@ async def setup_handlers(application: Application) -> None:
     application.add_handler(CommandHandler("help", help_command))
     application.add_handler(CommandHandler("fund",fund_command))
     application.add_handler(CommandHandler("balance",balance_command))
-    application.add_handler(CommandHandler("buy",buy_command))
+    # application.add_handler(CommandHandler("buy",buy_command))
+    conversation_handler = ConversationHandler(
+        entry_points=[CommandHandler('buy', start_transaction)],
+        states={
+            CHOOSE_CURRENCY: [
+                CallbackQueryHandler(currency_selected, pattern='^(USDC|USDT|PYUSD)$')
+            ],
+            INPUT_AMOUNT: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, amount_received)
+            ],
+            CONFIRM_TRANSACTION: [
+                CallbackQueryHandler(transaction_confirmed, pattern='^(confirm|cancel)$')
+            ],
+        },
+        fallbacks=[
+            CommandHandler('cancel', cancel_transaction),
+            MessageHandler(filters.ALL, timeout_handler)
+        ],
+        conversation_timeout=300,  # 5 minutes timeout
+        name="transaction_conversation",
+    )
+    application.add_handler(conversation_handler)
     
     # Add more handlers here as needed
     # Example:

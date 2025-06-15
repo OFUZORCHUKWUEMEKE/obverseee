@@ -13,8 +13,8 @@ import logging
 load_dotenv()
 
 logger = logging.getLogger(__name__)
-
-SELECTING_OPTION, WAITING_FOR_INPUT,CONFIRM = range(3)
+# Define conversation states
+CHOOSE_CURRENCY, INPUT_AMOUNT, CONFIRM_TRANSACTION = range(3)
 
 async def get_user_service():
     # Assuming you have access to user_repository here
@@ -25,37 +25,143 @@ async def get_wallet_service():
     wallet_repository = WalletRepository()
     return WalletService(wallet_repository)
 
-async def buy_command(update: Update,
-    context: ContextTypes.DEFAULT_TYPE)->None:
-    """
-    Handle the /balance command.
-    Buy Stablecoin USDT / USDC
-    """
-    # user = update.effective_user
-    # user_info = update.message.from_user
-    # user_service = await get_user_service()
-    # wallet_service = await get_wallet_service()
-    # swap = JupiterSwap()
+async def start_transaction(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Start the transaction conversation and show currency selection."""
     keyboard = [
-        [InlineKeyboardButton("USDT", callback_data="usdt")],
-        [InlineKeyboardButton("USDC", callback_data="usdc")],
-        [InlineKeyboardButton("PYUSD", callback_data="pyusd")]
+        [InlineKeyboardButton("USDC", callback_data='USDC')],
+        [InlineKeyboardButton("USDT", callback_data='USDT')],
+        [InlineKeyboardButton("PYUSD", callback_data='PYUSD')]
     ]
-    
     reply_markup = InlineKeyboardMarkup(keyboard)
-    await update.message.reply_text("Choose an option:", reply_markup=reply_markup)
-    return SELECTING_OPTION
+    
+    await update.message.reply_text(
+        "Welcome! Please choose a cryptocurrency:",
+        reply_markup=reply_markup
+    )
+    
+    return CHOOSE_CURRENCY
 
-async def button_handler(update:Update,context:ContextTypes.DEFAULT_TYPE):
+async def currency_selected(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Handle currency selection and ask for amount."""
     query = update.callback_query
     await query.answer()
-    user_id = query.from_user.id
-    selected_option = query.data
-    context.user_data["selected_option"] = selected_option
+    
+    # Store the selected currency
+    context.user_data['currency'] = query.data
+    
+    await query.edit_message_text(
+        f"You selected: {query.data}\n\n"
+        "Please enter the amount you want to transact:"
+    )
+    return INPUT_AMOUNT
 
-    await query.edit_message_text(f"Please enter your {selected_option.replace('_','')}:")
-    return WAITING_FOR_INPUT
+async def amount_received(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Handle amount input and show confirmation."""
+    try:
+        amount = float(update.message.text)
+        if amount <= 0:
+            await update.message.reply_text(
+                "Please enter a valid positive amount:"
+            )
+            return INPUT_AMOUNT
+        
+        # Store the amount
+        context.user_data['amount'] = amount
+        
+        # Create confirmation keyboard
+        keyboard = [
+            [
+                InlineKeyboardButton("✅ Confirm", callback_data='confirm'),
+                InlineKeyboardButton("❌ Cancel", callback_data='cancel')
+            ]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        currency = context.user_data['currency']
+        
+        await update.message.reply_text(
+            f"📋 Transaction Summary:\n"
+            f"Currency: {currency}\n"
+            f"Amount: {amount:,.2f} {currency}\n\n"
+            f"Please confirm or cancel this transaction:",
+            reply_markup=reply_markup
+        )
+        
+        return CONFIRM_TRANSACTION
+        
+    except ValueError:
+        await update.message.reply_text(
+            "Invalid amount format. Please enter a numeric value:"
+        )
+        return INPUT_AMOUNT
 
+async def transaction_confirmed(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Handle transaction confirmation or cancellation."""
+    query = update.callback_query
+    await query.answer()
+    input_mint = swap.tokens["SOL"]
+    
+    if query.data == 'confirm':
+        currency = context.user_data['currency']
+        amount = context.user_data['amount']
+        swap = JupiterSwap()
+        # Here you would implement your actual transaction logic
+        # For now, we'll just simulate a successful transaction
+        token_map = {
+            "USDC": swap.tokens["USDC"],
+            "USDT": swap.tokens["USDT"],
+            "PYUSD": swap.tokens["PYUSD"]
+        }
+        input_mint = token_map.get(swap.tokens["SOL"])
+        output_mint = token_map.get(currency, swap.tokens["SOL"])
+        await query.edit_message_text(
+            f"✅ Transaction Confirmed!\n\n"
+            f"Currency: {currency}\n"
+            f"Amount: {amount:,.2f} {currency}\n"
+            f"Status: Processing...\n\n"
+            f"You will receive a notification once the transaction is complete."
+        )
+        
+        # Clear user data
+        context.user_data.clear()
+        
+        # Here you could add your transaction processing logic
+        # process_transaction(currency, amount, update.effective_user.id)
+        
+    elif query.data == 'cancel':
+        await query.edit_message_text(
+            "❌ Transaction cancelled.\n\n"
+            "Use /transaction to start a new transaction."
+        )
+        
+        # Clear user data
+        context.user_data.clear()
+    
+    return ConversationHandler.END
+
+async def cancel_transaction(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Handle manual cancellation via /cancel command."""
+    await update.message.reply_text(
+        "❌ Transaction cancelled.\n\n"
+        "Use /transaction to start a new transaction."
+    )
+    
+    # Clear user data
+    context.user_data.clear()
+    
+    return ConversationHandler.END
+
+async def timeout_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Handle conversation timeout."""
+    await update.message.reply_text(
+        "⏰ Transaction timed out due to inactivity.\n\n"
+        "Use /transaction to start a new transaction."
+    )
+    
+    # Clear user data
+    context.user_data.clear()
+    
+    return ConversationHandler.END
     # try:
     #     user = await user_service.get_user(str(user.id))
     #     if not user:
