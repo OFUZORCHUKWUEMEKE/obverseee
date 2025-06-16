@@ -30,16 +30,14 @@ class JupiterSwap:
         self.rpc_url = os.getenv("SOLANA_RPC_URL")
         self.client = Client(self.rpc_url)
         self.jupiter_base_url = "https://lite-api.jup.ag/swap/v1"
-
          # Token addresses
         self.tokens = {
             "SOL": "So11111111111111111111111111111111111111112",
             "USDC": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
             "USDT": "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB",
             "PYUSD":"2b1kV6DkPAnxd5ixfnxCpjxmKwqjjaYmCZfHsFu24GXo"
-        }
-    
-   
+        } 
+ 
 
     def get_quote(self,input_mint: str, output_mint: str, amount: int, slippage_bps: int = 50)->Dict:
          """
