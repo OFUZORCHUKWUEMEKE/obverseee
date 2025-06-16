@@ -63,11 +63,9 @@ async def amount_received(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             await update.message.reply_text(
                 "Please enter a valid positive amount:"
             )
-            return INPUT_AMOUNT
-        
+            return INPUT_AMOUNT    
         # Store the amount
-        context.user_data['amount'] = amount
-        
+        context.user_data['amount'] = amount      
         # Create confirmation keyboard
         keyboard = [
             [
@@ -78,7 +76,7 @@ async def amount_received(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         reply_markup = InlineKeyboardMarkup(keyboard)
         
         currency = context.user_data['currency']
-        
+
         await update.message.reply_text(
             f"📋 Transaction Summary:\n"
             f"Currency: {currency}\n"
@@ -99,21 +97,39 @@ async def transaction_confirmed(update: Update, context: ContextTypes.DEFAULT_TY
     """Handle transaction confirmation or cancellation."""
     query = update.callback_query
     await query.answer()
-    input_mint = swap.tokens["SOL"]
     
     if query.data == 'confirm':
         currency = context.user_data['currency']
         amount = context.user_data['amount']
+        amount_lamports = int(amount * 1_000_000_000)
         swap = JupiterSwap()
+        user_service = await get_user_service()
+        wallet_service = await get_wallet_service()
         # Here you would implement your actual transaction logic
         # For now, we'll just simulate a successful transaction
         token_map = {
+            "SOL":swap.tokens["SOL"],
             "USDC": swap.tokens["USDC"],
             "USDT": swap.tokens["USDT"],
             "PYUSD": swap.tokens["PYUSD"]
         }
-        input_mint = token_map.get(swap.tokens["SOL"])
+        input_mint = token_map.get("SOL")
         output_mint = token_map.get(currency, swap.tokens["SOL"])
+        quote = swap.get_quote(input_mint,output_mint,amount_lamports)
+        try:
+            existing_user = await user_service.get_user(str(user.id))
+            if existing_user:
+               wallets = await wallet_service.get_user_wallets(str(existing_user.id),chain=Chain.SOLANA)
+               address = wallets[0].address
+               swap = swap.get_swap(quote,address)
+        except Exception as e:
+            logger.error(f"Error in start command for user {user.id}: {str(e)}")
+            await update.message.reply_text(
+                "⚠️ An error occurred while processing your request. Please try again later."
+            )
+            raise
+        # swaps = swap.get_swap(quote)
+        
         await query.edit_message_text(
             f"✅ Transaction Confirmed!\n\n"
             f"Currency: {currency}\n"

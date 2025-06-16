@@ -2,8 +2,10 @@ import requests
 import json
 from typing import Dict, Any, Optional
 from solana.rpc.api import Client
-# from solana.keypair import Keypair
-# from solana.transaction import Transaction
+from ..repositories.user import UserRepository
+from ..repositories.wallet import WalletRepository
+from .wallet import WalletService
+from .user import UserService
 from solders.pubkey import Pubkey
 from solders.keypair import Keypair
 from solders.transaction import Transaction
@@ -27,7 +29,7 @@ class JupiterSwap:
         """
         self.rpc_url = os.getenv("SOLANA_RPC_URL")
         self.client = Client(self.rpc_url)
-        self.jupiter_base_url = "https://quote-api.jup.ag/v6"
+        self.jupiter_base_url = "https://lite-api.jup.ag/swap/v1"
 
          # Token addresses
         self.tokens = {
@@ -36,6 +38,8 @@ class JupiterSwap:
             "USDT": "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB",
             "PYUSD":"2b1kV6DkPAnxd5ixfnxCpjxmKwqjjaYmCZfHsFu24GXo"
         }
+    
+   
 
     def get_quote(self,input_mint: str, output_mint: str, amount: int, slippage_bps: int = 50)->Dict:
          """
@@ -50,7 +54,7 @@ class JupiterSwap:
             Quote data or None if failed
         """
          try:
-            url = f"{self.jupiter_base_url}/quote"
+            url ="https://quote-api.jup.ag/v6/quote"
             params = {
                 "inputMint": input_mint,
                 "outputMint": output_mint,
@@ -76,7 +80,7 @@ class JupiterSwap:
                Serialized transaction or None if failed
         """
         try:
-            url = f"{self.jupiter_base_url}/swap"
+            url = "https://quote-api.jup.ag/v6/swap"
             params = {
                 "quote": quote,
                 "userPublicKey": user_public_key,
