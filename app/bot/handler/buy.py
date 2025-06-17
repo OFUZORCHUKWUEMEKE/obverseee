@@ -96,6 +96,7 @@ async def amount_received(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 async def transaction_confirmed(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Handle transaction confirmation or cancellation."""
     query = update.callback_query
+    user = update.effective_user
     await query.answer()
     
     if query.data == 'confirm':

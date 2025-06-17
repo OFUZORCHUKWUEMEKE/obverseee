@@ -32,7 +32,6 @@ async def balance_command(update: Update,
     user_service = await get_user_service()
     wallet_service = await get_wallet_service()
     swap = JupiterSwap()
-    
     try:
         user = await user_service.get_user(str(user.id))
         if not user:
