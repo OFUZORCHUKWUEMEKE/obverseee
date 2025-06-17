@@ -117,12 +117,13 @@ async def transaction_confirmed(update: Update, context: ContextTypes.DEFAULT_TY
         input_mint = token_map.get("SOL")
         output_mint = token_map.get(currency, swap.tokens["SOL"])
         quote = swap.get_quote(input_mint,output_mint,amount_lamports)
+        print(quote["routePlan"])
         try:
             existing_user = await user_service.get_user(str(user.id))
             if existing_user:
                wallets = await wallet_service.get_user_wallets(str(existing_user.id),chain=Chain.SOLANA)
                address = wallets[0].address
-               swap = swap.get_swap(quote,address)
+            #    swap = swap.get_swap(quote,address)
         except Exception as e:
             logger.error(f"Error in start command for user {user.id}: {str(e)}")
             await update.message.reply_text(
