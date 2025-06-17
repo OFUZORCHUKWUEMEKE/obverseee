@@ -54,7 +54,6 @@ class WalletService:
             created_at=datetime.utcnow(),
             tokens=[]
         )
-
         try:
             created_wallet = await self.repository.create(wallet)
             logger.info(f"Created new wallet {created_wallet.id} for user {user_id}")
@@ -301,6 +300,83 @@ class WalletService:
         keypair = Keypair()
         encrypted = self.encrypt_private_key(keypair, encryption_key)
         return keypair, encrypted    
+
+    async def restore_keypair_from_wallet(self, wallet_id: str, password: str = "my-strong-password-123") -> Keypair:
+       """
+       Restore a Solana keypair from an encrypted private key stored in a wallet.
+    
+       Args:
+           wallet_id: The ID of the wallet containing the encrypted private key
+           password: The password used to derive the encryption key (should match creation password)
+
+       Returns:
+           Keypair: The restored Solana keypair
+    
+       Raises:
+           ValueError: If wallet not found or decryption fails
+           RuntimeError: If there's an error fetching the wallet
+       """
+       try:
+           # Get the wallet from database
+           wallet = await self.get_wallet(wallet_id)
+           if not wallet:
+            raise ValueError("Wallet not found")
+        
+           # Derive the encryption key using the same password and method as creation
+           # Note: In production, you should store the salt with the wallet or derive it consistently
+           salt = b"obverse-109/*767^&%^%"  # In production, store this with the wallet
+           derived_key, _ = self.generate_fernet_key(password=password, salt=salt)
+        
+           # Decrypt the private key to restore the keypair
+           restored_keypair = self.decrypt_to_keypair(wallet.encrypted_private_key, derived_key)
+        
+           # Verify the restored keypair matches the wallet address
+           if str(restored_keypair.pubkey()) != wallet.address:
+               raise ValueError("Restored keypair does not match wallet address")
+        
+           logger.info(f"Successfully restored keypair for wallet {wallet_id}")
+           return restored_keypair
+        
+       except ValueError as e:
+            logger.warning(f"Keypair restoration failed: {str(e)}")
+            raise
+       except Exception as e:
+            logger.error(f"Error restoring keypair for wallet {wallet_id}: {str(e)}")
+            raise RuntimeError("Failed to restore keypair") from e
+
+    async def restore_keypair_from_encrypted_key(self, encrypted_private_key: str, password: str = "my-strong-password-123", salt: bytes = None) -> Keypair:
+        """
+        Restore a Solana keypair directly from an encrypted private key string.
+    
+        Args:
+            encrypted_private_key: The base64 encoded encrypted private key
+        password: The password used to derive the encryption key
+        salt: The salt used during key derivation (if None, uses fixed salt)
+    
+        Returns:
+            Keypair: The restored Solana keypair
+    
+        Raises:
+            ValueError: If decryption fails
+        """
+        try:
+        # Use provided salt or default
+           if salt is None:
+              salt = b"obverse-109/*767^&%^%"  # Should match the salt used during encryption
+        
+           # Derive the encryption key
+           derived_key, _ = self.generate_fernet_key(password=password, salt=salt)
+        
+           # Decrypt and restore the keypair
+           restored_keypair = self.decrypt_to_keypair(encrypted_private_key, derived_key)
+           print(restored_keypair.pubkey()) 
+
+           logger.info("Successfully restored keypair from encrypted key")
+        #    print(restored_keypair)
+           return restored_keypair 
+        except Exception as e:
+           logger.error(f"Error restoring keypair from encrypted key: {str(e)}")
+           raise ValueError("Failed to decrypt private key") from e 
     
     async def create_solana_wallet(self,user_id:str)->Wallet:
         """
@@ -312,7 +388,8 @@ class WalletService:
         """
         # Password-based encryption
         password = "my-strong-password-123"
-        derived_key ,salt = self.generate_fernet_key(password=password)
+        salt = b"obverse-109/*767^&%^%"
+        derived_key ,salt = self.generate_fernet_key(password=password,salt=salt)
         kp,enc_priv = self.generate_new_keypair(derived_key)
 
         # Encrypt existing keypair with password

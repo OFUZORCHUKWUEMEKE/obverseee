@@ -37,12 +37,17 @@ async def balance_command(update: Update,
         if not user:
             raise ValueError("User not Found in DB")
         wallets = await wallet_service.get_user_wallets(str(user.id),chain=Chain.SOLANA)
-        print(wallets)
+        # print(wallets)
         address = wallets[0].address
         sol_mint = swap.tokens["SOL"]
         balance = await wallet_service.check_wallet_balance(address)
         # bal =  swap.get_token_balance(address,sol_mint)
-        print(balance);
+        encrypt_private_key = wallets[0].encrypted_private_key
+        print(wallets[0].encrypted_private_key)
+        keypair = await wallet_service.restore_keypair_from_encrypted_key(encrypted_private_key=encrypt_private_key)
+        # assert(keypair.pubkey() == address)
+        # print(keypair)
+        print(address)
         # print(bal)
         balance_message = (
                 f"""
