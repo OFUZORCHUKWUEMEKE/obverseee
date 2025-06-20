@@ -35,7 +35,7 @@ async def start_transaction(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     reply_markup = InlineKeyboardMarkup(keyboard)
     
     await update.message.reply_text(
-        "Welcome! Please choose a cryptocurrency:",
+        "Welcome! Choose a Stablecoin",
         reply_markup=reply_markup
     )
     
