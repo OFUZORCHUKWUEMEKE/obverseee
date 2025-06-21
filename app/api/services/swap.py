@@ -198,6 +198,167 @@ class JupiterSwap:
             print(f"Error getting balance: {e}")
             return 0.0
 
+    def buy_usdt_with_sol(self,keypair:Keypair,usdt_amount:float,slippage_bps:int=50)->Optional[str]:
+        """
+        Buy a specific amount of USDT using available SOL in the wallet
+
+        Args:
+          keypair: User's Solana Keypair
+          usdt_amount:Desired amount of USDT to buy
+          slippage_bps:Slippage in basis points (50 = 0.5%)
+        Returns:
+          Transaction signatut=re or None if failed
+        """
+        try:
+            print(f"Attempting to buy {usdt_amount} USDT..")
+            # Get current SOL Balance
+            wallet_address = str(keypair.pubkey())
+            sol_balance = self.get_token_balance(wallet_address,self.tokens["SOL"])
+
+            if sol_balance<=0:
+                print("Error: No SOL balance available")
+                return None
+            # Reserve some SOL for transaction fees (0.005 SOL should be enough)
+            fee_reserve = 0.005
+            available_sol = sol_balance - fee_reserve
+            if available_sol<=0 :
+                print("Error: Insufficient SOL balance for transaction fees")
+                return None
+            print(f"Available SOL balance: {available_sol:.4f} SOL")
+            # get quote for available SOL to see how much USDT we can get
+            available_sol_lamports = int(available_sol * 1_000_000_000)
+            quote = self.get_quote(
+                self.tokens["SOL"],
+                self.tokens["USDT"],
+                available_sol_lamports,
+                slippage_bps
+            )
+            if not quote:
+                print("Error: Could not get quote from Jupiter")
+                return None
+            # check how much USDT we can get with available SOL(USDT has 6 decimals)
+            expected_usdt = float(quote['outAmount']) / 1_000_000
+            print(f"With {available_sol:.4f} SOL , you can get approximately {expected_usdt}")
+            if expected_usdt < usdt_amount:
+                print(f"Error: Insufficient SOL to buy {usdt_amount} USDT")
+                print(f"You need more SOL. Current balance can only buy ~{expected_usdt} USDT")
+                return None
+            # Calculate proportional SOL amount needed for desired USDT
+            sol_needed = available_sol * (usdt_amount / expected_usdt)
+            sol_needed_lamports = int(sol_needed * 1_000_000_000)
+
+            # Get a more precise quote with the calculated SOL amount
+            precise_quote = self.get_quote(
+                self.tokens["SOL"],
+                self.tokens["USDT"],
+                sol_needed_lamports,
+                slippage_bps
+            )
+            if not precise_quote:
+                print("Error: Could not get precise quote")
+                return None
+            final_usdt_amount = float(precise_quote['outAmount']) / 1_000_000
+            print(f"Final quote: {sol_needed:.4f} SOL -> {final_usdt_amount:.2f} USDT")
+            # get swap transaction
+            swap_transaction_data = self.get_swap(precise_quote,wallet_address)
+            if not swap_transaction_data or 'swapTransaction' not in swap_transaction_data:
+                print("Error: Could not get swap transation")
+                return None
+            result = self.execute_swap(keypair,swap_transaction_data['swapTransaction'])
+            if result:
+                print(f"Successfully bought: {final_usdt_amount:.2f} USDT")
+                print(f"Transaction signature: {result}")
+                return result
+            else:
+                print("Swap execution failed")
+                return None
+        except Exception as e:
+            print(f"Error in buy_usdt_with_sol: {e}")
+            return None
+
+    def buy_usdc_with_sol(self,keypair:Keypair,usdc_amount:float,slippage_bps:int=50)->Optional[str]:
+        """
+        Buy a specific amount of USDC using available SOL in the wallet
+        Args:
+           keypair: User's Solana keypair
+           usdc_amount: Desired amount of USDC to buy
+           slippage_bps: Slippage in basis points (50 = 0.5%)
+        Returns:
+          Transaction signature or None if failed
+        """
+        try:
+            print(f"Attempting to buy {usdc_amount} USDC...")
+            # Get current SOL balance
+            wallet_address = str(keypair.pubkey())
+            sol_balance = self.get_token_balance(wallet_address,self.tokens["SOL"])
+
+            if sol_balance <= 0:
+                print("Error: No SOL Balance available")
+                return None
+            # reserve some SOL for transaction fees
+            fee_reserve = 0.005
+            available_sol = sol_balance - fee_reserve
+            if available_sol<=0:
+                print("Error: Insufficient SOL Balance for transaction fees")
+                return None
+            print(f"Available SOL balance: {available_sol:.4f} SOL")
+            # Get quote for available SOL to see how much USDC we can get
+            available_sol_lamports = int(available_sol * 1_000_000_000)
+            quote = self.get_quote(
+                self.tokens["SOL"],
+                self.tokens["USDC"],
+                available_sol_lamports,
+                slippage_bps
+            )
+            if not quote:
+                print("Error: Could not get quote from jupiter")
+                return None
+            expected_usdt = float(quote["outAmount"]) / 1_000_000
+            print(f"With {available_sol:.4f} SOL , you can get approximately {expected_usdt:.2f} USDC")
+            if expected_usdc < usdc_amount:
+               print(f"Error: Insufficient SOL to buy {usdc_amount} USDC")
+               print(f"You need more SOL. Current balance can only buy ~{expected_usdc:.2f} USDC")
+               return None
+            sol_needed = available_sol * (usdc_amount / expected_usdc)
+            sol_needed_lamports = int(sol_needed * 1_000_000_000)
+            # Get a more precise quote with the calculated SOL amount
+            precise_quote = self.get_quote(
+              self.tokens["SOL"],
+              self.tokens["USDC"],
+              sol_needed_lamports,
+              slippage_bps
+            )
+            if not precise_quote:
+                print("Error: Could not get precise quote")
+                return None
+            final_usdc_amount = float(precise_quote["outAmount"]) / 1_000_000
+            print(f"Final quote: {sol_needed:.4f} SOL -> {final_usdc_amount:.2f} USDC")
+
+            # Get Swap transaction
+            swap_transaction_data = self.get_swap(precise_quote,wallet_address)
+            if not swap_transaction_data or 'swapTransaction' not in swap_transaction_data:
+                print("Error: Could not get swap transaction")
+                return None
+            # Execute the swap
+            result = self.execute_swap(keypair,swap_transaction_data['swapTransaction'])
+            if result:
+                print(f"Successfully bought {final_usdc_amount:.2f} USDC!")
+                print(f"Transaction signature:{result}")
+                return result
+            else:
+                print("Swap execution failed")
+                return None
+        except Exception as e:
+            print(f"Error in buy_usdc_with_sol: {e}")
+            return None
+    
+
+
+
+
+            
+
+
 
     
 
